@@ -44,7 +44,7 @@ _SAFE_ARG = re.compile(r"[A-Za-z0-9_*?./#$:,-]+")
 
 
 class BuildError(RuntimeError):
-    """The build could not run: tool missing, timeout."""
+    """The build could not run: a tool is missing, it timed out, or dependencies could not be installed."""
 
 
 class BuildRunner(Protocol):
@@ -118,23 +118,23 @@ class RealBuildRunner:
         # does not ignore it, so inside it would dirty the clone.
         venv = clone.with_name(f"{clone.name}-{service}-venv")
         python = venv / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
-        # --no-config: uv must not read settings (e.g. a package index) from the untrusted repository.
-        uv_pip = ["uv", "pip"]
 
+        # Every uv command gets --no-config: uv must not read settings (e.g. a package
+        # index) from the untrusted repository.
         if self._run(["uv", "venv", "--no-config", "--python", self.target_python, str(venv)],
                      service_dir, log_dir / "uv-venv.log") != 0:
             raise BuildError(f"could not create a Python {self.target_python} venv (log: {log_dir / 'uv-venv.log'})")
 
         constraints = log_dir / "build-constraints.txt"
         constraints.write_text(BUILD_CONSTRAINTS, encoding="utf-8")
-        installed = self._run(
-            [*uv_pip, "install", "--no-config", "--python", str(venv), "--build-constraint", str(constraints),
+        if self._run(
+            ["uv", "pip", "install", "--no-config", "--python", str(venv), "--build-constraint", str(constraints),
              "-r", "requirements.lock", PYTEST],
             service_dir, log_dir / "uv-pip-install.log", extra_env=INSTALL_ENV,
-        )
-        if installed != 0:
-            # The pinned dependencies do not install: the change breaks the build.
-            return BuildResult(service=service, tests_passed=False, log_dir=str(log_dir))
+        ) != 0:
+            # Often an environment problem (e.g. an old release that does not build here),
+            # not proof that the change is wrong, so it counts as a build that could not run.
+            raise BuildError(f"the pinned dependencies could not be installed (log: {log_dir / 'uv-pip-install.log'})")
 
         report = log_dir / "pytest-report.xml"
         start = time.monotonic()
@@ -146,7 +146,7 @@ class RealBuildRunner:
         tests_run, failed = _read_junit_reports([report] if report.is_file() else [])
 
         listing = log_dir / "pip-list.json"
-        self._run([*uv_pip, "list", "--no-config", "--python", str(venv), "--format", "json"],
+        self._run(["uv", "pip", "list", "--no-config", "--python", str(venv), "--format", "json"],
                   service_dir, log_dir / "uv-pip-list.log", stdout_to=listing)
 
         return BuildResult(

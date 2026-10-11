@@ -1,5 +1,5 @@
 {
-  "_note": "Example evidence for an auditor. Links 1-3 are taken from a real harness run (runs/20261011-220645). Links 4-6 are MOCKED: they would come from CI, the deployment system and production inventory, which this project does not have.",
+  "_note": "Example evidence for an auditor. Links 1-3 are taken from a real harness run (run 20261011-220645). Run outputs (runs/, .work/) are not committed; `uv run python harness.py --repo ../homework` writes the same records (result.json, audit.jsonl). A new run gives the same base commit and findings and patch hashes, while commit SHAs, times and audit hashes differ. Links 4-6 are MOCKED: they would come from CI, the deployment system and production inventory, which this project does not have.",
   "claim": {
     "finding": "F-40219",
     "cve": "CVE-2020-14343",

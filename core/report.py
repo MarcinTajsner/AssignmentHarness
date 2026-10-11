@@ -104,22 +104,11 @@ def write_review(path: Path, record: dict, baseline: dict | None) -> None:
             f"- Test selection changed (excludes, skip flags, pytest config): {_yes_no(facts['touches_test_config'])}",
             f"- CI configuration changed: {_yes_no(facts['touches_ci'])}",
             "",
-            "Suspicious additions (known-risky patterns in added lines; no hits proves nothing):",
-            "",
         ]
-        if facts["suspicious_additions"]:
-            lines += ["| Location | Rule | Added line |", "|---|---|---|"]
-            lines += [
-                f"| {_cell(f'{s['file']}:{s['line']}')} | {_text(s['rule'])} | {_cell(s['text'])} |"
-                for s in facts["suspicious_additions"]
-            ]
-        else:
-            lines.append("None.")
-        lines.append("")
 
     lines += ["## Build and tests", ""]
     if build is None:
-        lines += ["Not built (builds skipped, rejected before the build, or an earlier stage failed).", ""]
+        lines += ["Not built (builds were skipped, or an earlier stage failed).", ""]
     else:
         lines += [
             "| | Baseline (unchanged code) | This change |",

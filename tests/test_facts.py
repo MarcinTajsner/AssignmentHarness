@@ -3,7 +3,7 @@
 from core import workspace
 from core.facts import compute_facts
 from core.models import DependencyChange
-from tests.helpers import write
+from tests.helpers import git, write
 
 POM = """<project xmlns="http://maven.apache.org/POM/4.0.0">
   <properties>
@@ -59,6 +59,21 @@ def test_flags_and_suspicious_additions(make_repo):
     hits = {(hit.file, hit.line, hit.rule) for hit in facts.suspicious_additions}
     assert (config, 3, "python: process execution") in hits
     assert (ci, 3, "hard-coded secret") in hits
+
+
+def test_added_binary_is_flagged_but_deleted_binary_is_not(make_repo):
+    old_jar, new_jar = "services/py/lib/old.jar", "services/py/lib/new.jar"
+    repo = make_repo({"services/py/requirements.lock": "pkg==1.0\n"})
+    (repo / "services/py/lib").mkdir(parents=True)
+    (repo / old_jar).write_bytes(bytes(range(256)))
+    git(repo, "add", "--all")
+    git(repo, "commit", "--quiet", "-m", "add a jar")
+
+    (repo / old_jar).unlink()
+    (repo / new_jar).write_bytes(bytes(range(255, -1, -1)))
+    facts = facts_after(repo, {})
+    assert [(hit.file, hit.rule) for hit in facts.suspicious_additions] == [
+        (new_jar, "binary content (cannot be inspected)")]
 
 
 def test_harmless_lines_are_not_flagged(make_repo):

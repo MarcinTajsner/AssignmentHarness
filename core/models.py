@@ -56,7 +56,7 @@ class DependencyChange:
 
 @dataclass(frozen=True)
 class SuspiciousAddition:
-    """An added line matching a known-risky pattern. A hint for escalation, never proof of safety."""
+    """An added line matching a known-risky pattern. Any hit rejects the change; no hits never prove it safe."""
 
     file: str
     line: int  # line number in the new file; 0 for binary content

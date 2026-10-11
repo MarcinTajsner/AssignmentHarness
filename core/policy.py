@@ -105,6 +105,9 @@ def decide(
 
     if baseline is None:
         reasons.append("[V5] no baseline build to compare the tests with")
+    elif baseline.error:
+        reasons.append(f"[V5] the baseline build could not run, so there is nothing to compare the tests with: "
+                       f"{baseline.error}")
     elif not baseline.tests_passed:
         reasons.append("[V5] tests already failed before the change, so they prove nothing about it")
     elif build.tests_run == 0:

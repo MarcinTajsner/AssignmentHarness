@@ -50,9 +50,9 @@ def _any(path: str) -> bool:
     return True
 
 
-# Known-risky patterns, matched against added lines only. A deny-list: easy to
-# evade, so a hit escalates and points a reviewer at the line, while no hits
-# prove nothing. A real system would use semgrep/bandit/CodeQL here.
+# Known-risky patterns, matched against added lines only. Any hit rejects the
+# change before it is built (rule X3). This is a deny-list and easy to evade, so
+# no hits prove nothing. A real system would use semgrep/bandit/CodeQL here.
 SUSPICIOUS_PATTERNS: list[tuple[str, Callable[[str], bool], re.Pattern[str]]] = [
     ("python: process execution", _python, re.compile(r"\b(os\.system|os\.popen|os\.exec\w*|subprocess\.|pty\.spawn)")),
     ("python: dynamic code execution", _python, re.compile(r"(?<![\w.])(eval|exec|compile|__import__)\s*\(|\bimportlib\.")),
@@ -118,8 +118,9 @@ def _scan(diff: str) -> list[SuspiciousAddition]:
 
 
 def _added_lines(diff: str) -> Iterator[tuple[str, int, str | None]]:
-    """(file, line number in the new file, text) for every added line; text None for binary content."""
+    """(file, line number in the new file, text) for every added line; text None for added binary content."""
     file, old_left, new_left, line_no = "", 0, 0, 0
+    deleted = False  # a deleted file adds nothing, binary or not
     for raw in diff.split("\n"):
         if old_left > 0 or new_left > 0:  # inside a hunk
             if raw.startswith("+"):
@@ -135,7 +136,10 @@ def _added_lines(diff: str) -> Iterator[tuple[str, int, str | None]]:
         elif raw.startswith("diff --git "):
             header = raw.removeprefix("diff --git ")
             file = header.rsplit(" b/", 1)[-1] if " b/" in header else header
-        elif raw.startswith("GIT binary patch") or raw.startswith("Binary files "):
+            deleted = False
+        elif raw.startswith("deleted file mode"):
+            deleted = True
+        elif raw.startswith(("GIT binary patch", "Binary files ")) and not deleted:
             yield file, 0, None
         elif match := _HUNK.match(raw):
             old_left = int(match.group(1) or 1)

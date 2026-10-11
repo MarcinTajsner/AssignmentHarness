@@ -150,7 +150,7 @@ An auditor wants proof of three things: the CVE was remediated in production on 
 | 5. Deployment | The image reached production at a given time | Deployment system | mock |
 | 6. Running | Nothing in production runs the vulnerable image any more | Runtime inventory, rescan | mock |
 
-The links are tied together by identifiers that cannot be faked: the patch hash, the commit SHA, the image digest. [evidence/example-attestation.json](evidence/example-attestation.json) shows the whole chain for F-40219. Links 1–3 come from a real run of the harness; links 4–6 are mocked.
+The links are tied together by identifiers that cannot be faked: the patch hash, the commit SHA, the image digest. [evidence/example-attestation.json](evidence/example-attestation.json) shows the whole chain for F-40219. Links 1–3 come from a real run of the harness. Run outputs are not committed, but every run writes the same records; links 4–6 are mocked.
 
 The audit log is hash-chained, like git history. Every entry stores the hash of the previous entry, and also the hashes of the finding's `patch.diff` and `result.json`. Editing, removing or reordering anything afterwards is therefore detectable. It is not impossible, though: whoever can rewrite the whole log can recompute every hash. In production the entries would also go to write-once storage, or be signed with a key the harness does not hold.
 
@@ -172,9 +172,11 @@ Every change that is not rejected before the build is built and tested, and that
 
 ### 5.3 The harness cannot check a proposal (safe)
 
-A tool is missing, Maven times out, the diff does not apply, the POM no longer parses, or builds are switched off. The harness fails closed: the finding goes to REVIEW (N1, N3), and nothing unchecked goes in. The cost is people's time, and the vulnerability stays open longer.
+A tool is missing, Maven times out, Python dependencies cannot be installed, the diff does not apply, the POM no longer parses, or builds are switched off. The harness fails closed: the finding goes to REVIEW (N1, N3), and nothing unchecked goes in. The cost is people's time, and the vulnerability stays open longer.
 
-**Detection:** the reason says so (`[N1]`, `[N3]`) in `summary.md` and the audit log. When many findings in one run fail this way, the harness itself is broken (e.g. Maven Central is unreachable), not the proposals.
+One case looks different: if the Maven build of a change fails for an outside reason, e.g. a new dependency cannot be downloaded, it cannot be told apart from a change that breaks the build, and it is rejected (R2). That is still safe, because nothing goes in, but the reason is misleading.
+
+**Detection:** the reason says so (`[N1]`, `[N3]`) in `summary.md` and the audit log. When many findings in one run fail this way, the harness itself is broken (e.g. Maven is not installed), not the proposals. The build logs of each finding show whether an R2 rejection was caused by the change or by the environment.
 
 ### 5.4 Other known limits
 
@@ -209,7 +211,7 @@ The project was built with Claude Code. I directed the work, made the key decisi
 - **A coverage check for ACCEPT.** Accept only if at least one test executes code that uses the changed package (section 5.1).
 - **Human approval for REVIEW.** A person approves or rejects in the review report. The harness then records who decided and when in the audit log, and commits approved changes.
 - **The rest of the chain.** Push the branch and open a pull request, then collect the artifact, deployment and production evidence (section 4, links 4–6) automatically instead of mocking it.
-- **A code-change scenario.** A proper fix of `ConfigLoader` for F-40218 that allows only the `LegacyOverride` tag under SnakeYAML 2.0, to show how a real logic change is handled.
+- **Rule settings in a file.** Move what changes between repositories or over time into a TOML file: protected paths, the suspicious patterns, repositories that are never auto-accepted, how each repository is built. The rule logic itself stays in code, where it is tested.
 - **Performance checks** for code changes, using dedicated benchmarks rather than test timings.
 - **A tamper-proof audit log:** entries sent to write-once storage, or signed with a key the harness does not hold.
 

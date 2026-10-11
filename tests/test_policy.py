@@ -131,6 +131,7 @@ def test_code_change_and_extra_dependency_go_to_review():
     (replace(PYYAML_BUILD, tests_run=0), PY_BASELINE),
     (PYYAML_BUILD, replace(PY_BASELINE, tests_run=5)),
     (PYYAML_BUILD, replace(PY_BASELINE, tests_passed=False)),
+    (PYYAML_BUILD, replace(PY_BASELINE, tests_passed=False, error="mvn not found on PATH")),
     (PYYAML_BUILD, None),
 ])
 def test_weaker_test_evidence_goes_to_review(build_, baseline):
