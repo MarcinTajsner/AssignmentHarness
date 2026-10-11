@@ -66,7 +66,7 @@ class SuspiciousAddition:
 
 @dataclass(frozen=True)
 class Facts:
-    """What the Validator itself reads out of the proposed change. Described in facts.md."""
+    """What the Validator itself reads out of the proposed change. Described in DESIGN.md, section 2.2."""
 
     changed_files: list[str]
     lines_added: int

@@ -1,4 +1,4 @@
-"""The decision rules (policy.md), on synthetic inputs."""
+"""The decision rules (DESIGN.md, section 2.3), on synthetic inputs."""
 
 from dataclasses import replace
 

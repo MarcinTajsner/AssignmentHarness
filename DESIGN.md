@@ -155,3 +155,68 @@ The links are tied together by identifiers that cannot be faked: the patch hash,
 The audit log is hash-chained, like git history. Every entry stores the hash of the previous entry, and also the hashes of the finding's `patch.diff` and `result.json`. Editing, removing or reordering anything afterwards is therefore detectable. It is not impossible, though: whoever can rewrite the whole log can recompute every hash. In production the entries would also go to write-once storage, or be signed with a key the harness does not hold.
 
 For a REVIEW finding, link 3 would also record who approved the change and when. That approval step is not implemented.
+
+## 5. Failure modes
+
+### 5.1 Tests pass, but they do not test the changed code (unsafe)
+
+F-40219 is accepted because its test suite passes. But the only test does not touch `report_worker/config.py`, the code that uses PyYAML. PyYAML 5.4 also restricts which Python-specific tags `FullLoader` accepts. If an operator's override file relied on one of them, it would stop loading after an autonomous merge, and no test would notice.
+
+**Detection:** the harness cannot see this. In production it shows up as errors when override files are loaded after the deployment. The audit log ties that deployment back to the accepted change, so the change can be found and reverted quickly. To catch it before the merge, ACCEPT would also require a coverage check: at least one test executes code that uses the changed package.
+
+### 5.2 Code from the agent runs on the build machine (unsafe)
+
+Every change that is not rejected before the build is built and tested, and that runs code the agent wrote: tests, `setup.py`, Maven plugins. Changes that go to REVIEW, e.g. code changes (V1), are built too. The pre-build scan is a deny-list, so a manipulated agent can hide, say, obfuscated exfiltration in a test. The reduced environment keeps tokens in environment variables out of reach, but files in the user's home directory, such as `~/.m2/settings.xml` or `~/.ssh`, are still readable.
+
+**Detection:** on a local machine, hardly at all. In production, builds would run in a throwaway sandbox with no credentials and no outbound network, except to a package mirror. Blocked connection attempts would be logged and alerted on, so a change that tries to reach out is visible even when the scan missed it.
+
+### 5.3 The harness cannot check a proposal (safe)
+
+A tool is missing, Maven times out, the diff does not apply, the POM no longer parses, or builds are switched off. The harness fails closed: the finding goes to REVIEW (N1, N3), and nothing unchecked goes in. The cost is people's time, and the vulnerability stays open longer.
+
+**Detection:** the reason says so (`[N1]`, `[N3]`) in `summary.md` and the audit log. When many findings in one run fail this way, the harness itself is broken (e.g. Maven Central is unreachable), not the proposals.
+
+### 5.4 Other known limits
+
+- Overriding a version managed by a parent BOM (e.g. Spring Boot) is not a reason for review on its own, although that combination was never tested by the parent. Rule V3 catches major jumps, but not small overrides.
+- Versions are compared by their numbers ("5.4.1" → 5, 4, 1). That is not enough for every scheme, e.g. pre-release suffixes.
+- The audit log detects later edits, but whoever can rewrite all of it can recompute the hashes (section 4).
+
+## 6. AI usage
+
+The project was built with Claude Code. I directed the work, made the key decisions and checked every step. The AI proposed detailed designs, wrote the code, and explained what I did not know.
+
+**Me**
+- **Analysing the repository and its traps.** I worked through the code, the findings and the conflicting documentation. Where I lacked background, e.g. in Java, Maven or Spring Boot, I asked the AI to explain.
+- **The overall architecture:** an untrusted Proposer and a trusted Validator. I had planned this before starting.
+- **The project setup:** the uv project, a separate Python for the harness (3.14) and for the target's service (3.11, the version its CI uses), and a single `harness.py` command with the logic in `core/`.
+- **Keeping it simple.** Several AI proposals were cut down: the rules live in code instead of a separate config file, there are fewer output files per finding, and unnecessary git steps were dropped.
+- **Some of the facts:** detecting dangerous code in the agent's changes, which became the pre-build scan, and measuring performance before and after a change. Performance measurement is not implemented, because this repository has no benchmarks and its test timings are mostly JVM start-up. In a large project, with big APIs and many AI-proposed code changes, I still think it would be worth it.
+- **The policy:** which facts to use, and what goes to ACCEPT, REVIEW or REJECT.
+- **Review:** running and checking every implementation step, and shortening and simplifying this document.
+
+**AI (Claude Code)**
+- **The scratch clone and clean clone design.** The harness computes the diff itself and applies it to a fresh clone, so what is tested is exactly what would be committed.
+- **Proposing the facts** and how to compute them, e.g. comparing the dependency files before and after instead of parsing the diff.
+- **Hardening the builds:** the reduced environment, `uv --no-config`, restricted command arguments, and the workarounds needed to install old PyYAML releases on Windows.
+- **The audit output:** `result.json`, the hash-chained audit log, the review reports and the evidence chain. It also explained to me what each part is for and how the hash chain works.
+- **The implementation:** the code, the tests, the fixtures, and drafts of the documentation, including this document.
+
+## 7. What I would do next
+
+- **A real agent.** Replace the fixtures with an LLM that can only read and edit files in its scratch clone: no shell, no git, no credentials. Repository content would be presented to it as untrusted data, and its runs recorded as new fixtures.
+- **Sandboxed builds.** Run every build in a throwaway container with no credentials and no network except a package mirror, and alert on blocked connections (section 5.2).
+- **A coverage check for ACCEPT.** Accept only if at least one test executes code that uses the changed package (section 5.1).
+- **Human approval for REVIEW.** A person approves or rejects in the review report. The harness then records who decided and when in the audit log, and commits approved changes.
+- **The rest of the chain.** Push the branch and open a pull request, then collect the artifact, deployment and production evidence (section 4, links 4–6) automatically instead of mocking it.
+- **A code-change scenario.** A proper fix of `ConfigLoader` for F-40218 that allows only the `LegacyOverride` tag under SnakeYAML 2.0, to show how a real logic change is handled.
+- **Performance checks** for code changes, using dedicated benchmarks rather than test timings.
+- **A tamper-proof audit log:** entries sent to write-once storage, or signed with a key the harness does not hold.
+
+## 8. Scale: from 2 repositories to 300
+
+Running the harness itself scales easily: findings are independent of each other, so they can run in parallel on a pool of sandboxed build machines that share dependency caches. What changes is everything around the code.
+- **People become the bottleneck.** If a third of the findings go to REVIEW, someone has to read hundreds of reports. So reviews must be routed to each repository's owners, using ownership data that is kept current; here the runbook still names an owner who has left. Reviews must also be grouped, so one SnakeYAML upgrade is decided once instead of in fifty repositories.
+- **Risk becomes correlated.** The same accepted bump landing in 300 services at once can break many of them together, so autonomous merges need a staged rollout and a rate limit.
+- **Repositories differ** in build tools, layout and test quality. The harness needs settings for each repository, e.g. how to build it, or never to auto-accept where tests are weak. Those settings belong to the harness, not to the repository, or a repository could tell the harness to accept everything.
+- **The evidence must be in one place.** Each run now keeps its audit log on the machine that ran it. With many machines, the entries have to go to one shared store that can only be appended to, so an auditor can ask about one CVE across all 300 repositories.

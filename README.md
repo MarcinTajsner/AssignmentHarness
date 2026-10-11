@@ -11,9 +11,7 @@ For each finding the harness:
 
 The original repository is only ever cloned, never modified.
 
-More detail:
-- [policy.md](policy.md): the decision rules and why they are there.
-- [facts.md](facts.md): what the harness works out about a change.
+The design is described in [DESIGN.md](DESIGN.md): the autonomy boundary and decision rules, untrusted input, evidence, failure modes and scale.
 
 ## Requirements
 

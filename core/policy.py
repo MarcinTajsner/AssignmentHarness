@@ -1,4 +1,4 @@
-"""Decision policy: ACCEPT, REVIEW or REJECT, with reasons. Every rule is described in policy.md.
+"""Decision policy: ACCEPT, REVIEW or REJECT, with reasons. The rules are described in DESIGN.md, section 2.
 
 Pure functions over data: no files, no git, no network. Every verdict in the
 harness comes from here, including the ones for failed pipeline stages.
@@ -10,7 +10,7 @@ Principles:
 - REJECT when the agent oversteps its job or touches the gates that judge it,
   or when the change demonstrably does not fix the finding or breaks tests.
 
-Each reason starts with the id of its rule, e.g. "[X1]", so it can be looked up in policy.md.
+Each reason starts with the id of its rule, e.g. "[X1]", so it can be looked up in DESIGN.md, section 2.3.
 """
 
 import re

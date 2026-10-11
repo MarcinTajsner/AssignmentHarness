@@ -1,5 +1,5 @@
 {
-  "_note": "Example evidence for an auditor. Links 1-3 are taken from a real harness run (runs/20261011-204448). Links 4-6 are MOCKED: they would come from CI, the deployment system and production inventory, which this project does not have.",
+  "_note": "Example evidence for an auditor. Links 1-3 are taken from a real harness run (runs/20261011-220645). Links 4-6 are MOCKED: they would come from CI, the deployment system and production inventory, which this project does not have.",
   "claim": {
     "finding": "F-40219",
     "cve": "CVE-2020-14343",
@@ -31,7 +31,7 @@
         "base_commit": "7d572752e5cf1340f218639bc5e822e79e998b92",
         "proposed_by": "fixture/baseline",
         "patch_sha256": "3eea17803861a686a0b5aa1d44ff85cdc9cb85c9dceb0c1ddf61d1889a0e8abc",
-        "fix_commit": "6239683d8411c969e0411bab05c99209eb3b238e",
+        "fix_commit": "980a38ca4e437f82e5c99d0b82f94f958c9ea9ad",
         "branch": "harness/F-40219"
       },
       "how_to_verify": "sha256 of patch.diff equals patch_sha256, and git diff base_commit fix_commit equals patch.diff."
@@ -42,7 +42,7 @@
       "source": "harness",
       "mock": false,
       "evidence": {
-        "decided_at": "2026-10-11T18:45:08Z",
+        "decided_at": "2026-10-11T20:07:03Z",
         "verdict": "ACCEPT",
         "reasons": [
           "[OK] dependency-only change of PyYAML: 5.3.1 -> 5.4.1 (fixed version 5.4); all 1 test(s) passed, as many as before the change; no excluded test regressed"
@@ -53,15 +53,15 @@
         },
         "resolved_version": {"before_change": "5.3.1", "after_change": "5.4.1"},
         "rules": {
-          "harness_commit": "427432dddb0c79c5fe20a68ae300b83d83326c1b",
-          "harness_uncommitted_changes": true,
-          "policy_sha256": "f29e9e3e3d7799e072dfe63a74723ac649a544799b03d302631a09d2520e1e7f"
+          "harness_commit": "f3a4ad4ec6c8dfddbffc211df3c8bcce5672ef02",
+          "harness_uncommitted_changes": false,
+          "policy_sha256": "3331eb7b0987733b6b3dace3ffe66671018499aa3082885b8284676a30508dea"
         },
         "human_approval": "not required (ACCEPT)",
         "audit_entry": {
-          "log": "runs/20261011-204448/audit.jsonl",
-          "hash": "a1adfc1db82f93daf1b4253fb000dd4301dd8a59778d308d4143f20fe18b8bc7",
-          "result_sha256": "ceecec3e68c99b69df4f4da590aad19e1a3a65cb4756b7b954d55a5c0c9138bd"
+          "log": "runs/20261011-220645/audit.jsonl",
+          "hash": "879b38636d0f5401aca8f4945821964ad1a42a3197b4f7f7000415601c216791",
+          "result_sha256": "d94bd131c34cdf25008e2dac3f2889005b9d2b65b4822d436c13994a8767d12b"
         }
       },
       "how_to_verify": "audit.verify() reports the log intact, the entry with this hash is in it, and its result_sha256 matches result.json."
@@ -72,7 +72,7 @@
       "source": "CI (MOCK)",
       "mock": true,
       "evidence": {
-        "built_from_commit": "6239683d8411c969e0411bab05c99209eb3b238e",
+        "built_from_commit": "980a38ca4e437f82e5c99d0b82f94f958c9ea9ad",
         "image": "registry.example.com/report-worker@sha256:4b8e2f7d0c51a9e36f2d8b1c7a0e5d94f3b6c2a18e7d05f9c4a3b2e1d0f9a8c7",
         "sbom": {"format": "CycloneDX", "PyYAML": "5.4.1"},
         "provenance": "signed build provenance linking the image digest to built_from_commit"

@@ -1,4 +1,4 @@
-"""Facts computed from a change (facts.md), on a temporary git repository."""
+"""Facts computed from a change (DESIGN.md, section 2.2), on a temporary git repository."""
 
 from core import workspace
 from core.facts import compute_facts

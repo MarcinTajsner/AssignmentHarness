@@ -218,10 +218,12 @@ def _harness_version() -> dict:
         uncommitted = workspace.has_uncommitted_changes(HARNESS_DIR)
     except workspace.GitError:  # e.g. the harness was unpacked from a zip
         commit, uncommitted = None, None
+    # Line endings normalized, so the hash does not depend on how git checked the file out (core.autocrlf).
+    policy = (HARNESS_DIR / "core" / "policy.py").read_bytes().replace(b"\r\n", b"\n")
     return {
         "commit": commit,
         "uncommitted_changes": uncommitted,
-        "policy_sha256": _sha256((HARNESS_DIR / "core" / "policy.py").read_bytes()),
+        "policy_sha256": _sha256(policy),
     }
 
 
