@@ -1,0 +1,12 @@
+diff --git a/services/inventory-api/pom.xml b/services/inventory-api/pom.xml
+index 1597b4f..887592b 100644
+--- a/services/inventory-api/pom.xml
++++ b/services/inventory-api/pom.xml
+@@ -17,6 +17,7 @@
+ 
+   <properties>
+     <java.version>17</java.version>
++    <snakeyaml.version>2.0</snakeyaml.version>
+   </properties>
+ 
+   <dependencies>

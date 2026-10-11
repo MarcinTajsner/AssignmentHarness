@@ -1,0 +1,18 @@
+[project]
+name = "assignment-harness"
+version = "0.1.0"
+description = "Decides whether LLM-proposed dependency vulnerability fixes are accepted, routed for review, or rejected."
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "click>=8.5.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

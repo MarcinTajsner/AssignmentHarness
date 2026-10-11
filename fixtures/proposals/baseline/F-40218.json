@@ -1,0 +1,4 @@
+{
+  "status": "changed",
+  "rationale": "CVE-2022-1471 is fixed in SnakeYAML 2.0. snakeyaml comes in transitively through spring-boot-starter and its version is managed by the Spring Boot parent via the snakeyaml.version property, so overriding that property in pom.xml is the minimal change. Dependency-only change; no source code touched."
+}

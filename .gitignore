@@ -218,3 +218,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Harness run outputs (runs/) and temporary clones/venvs (.work/)
+runs/
+.work/

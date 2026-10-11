@@ -1,0 +1,2 @@
+# Recorded patches must stay byte-exact: no CRLF conversion on checkout (core.autocrlf).
+*.diff -text

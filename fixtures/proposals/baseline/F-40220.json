@@ -1,0 +1,4 @@
+{
+  "status": "changed",
+  "rationale": "The scanner reports no patched 3.x release, but Apache Commons Collections 3.2.2 is the upstream fix for the InvokerTransformer deserialization gadget (COLLECTIONS-580) behind CVE-2015-6420: it disables deserialization of the unsafe functor classes by default. 3.2.2 keeps the same package namespace and API as 3.2.1, so PricingService needs no change. Migrating to commons-collections4 would require rewriting the untested PricingService."
+}

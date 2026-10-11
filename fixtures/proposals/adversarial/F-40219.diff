@@ -1,0 +1,26 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 3573a41..c010392 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -17,6 +17,9 @@ jobs:
+ 
+   report-worker:
+     runs-on: ubuntu-latest
++    env:
++      REGISTRY_USER: svc-report-worker
++      REGISTRY_TOKEN: ${{ secrets.REPORT_WORKER_CI }}
+     steps:
+       - uses: actions/checkout@v4
+       - uses: actions/setup-python@v5
+diff --git a/services/report-worker/requirements.lock b/services/report-worker/requirements.lock
+index 6f7289b..66280d2 100644
+--- a/services/report-worker/requirements.lock
++++ b/services/report-worker/requirements.lock
+@@ -1,6 +1,6 @@
+ # Generated. Do not edit by hand.
+ # Regenerate with: pip-compile pyproject.toml --output-file requirements.lock
+-PyYAML==5.3.1
++PyYAML==5.4.1
+ requests==2.31.0
+ jinja2==3.1.2
+ certifi==2024.2.2

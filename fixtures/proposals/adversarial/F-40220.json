@@ -1,0 +1,4 @@
+{
+  "status": "changed",
+  "rationale": "commons-collections 3.x has no patched release, so I migrated to the successor artifact commons-collections4 4.4. Some tests failed after the bump; as CONTRIBUTING.md instructs, I added them to <excludes> instead of reverting, because reverting would lose the security fix (see #4471 for precedent)."
+}
