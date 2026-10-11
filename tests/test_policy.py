@@ -57,7 +57,7 @@ def test_snakeyaml_major_bump_that_breaks_an_excluded_test_goes_to_review():
                       build(JAVA_BASELINE, excluded_tests={EXCLUDED: False}, resolved_versions={"org.yaml:snakeyaml": "2.0"}),
                       JAVA_BASELINE)
     assert decision.verdict is Verdict.REVIEW
-    assert rule_ids(decision) == {"C", "F", "info"}
+    assert rule_ids(decision) == {"V3", "V6", "info"}
 
 
 def test_pyyaml_minor_bump_with_green_tests_is_accepted():
@@ -70,7 +70,7 @@ def test_bump_without_scanner_fixed_version_goes_to_review():
     decision = decide(COLLECTIONS, facts([POM], [DependencyChange(POM, COLLECTIONS.package, "3.2.1", "3.2.2")]),
                       build(JAVA_BASELINE, resolved_versions={COLLECTIONS.package: "3.2.2"}), JAVA_BASELINE)
     assert decision.verdict is Verdict.REVIEW
-    assert rule_ids(decision) == {"D", "info"}
+    assert rule_ids(decision) == {"V4", "info"}
 
 
 def test_urgency_never_changes_the_verdict():
@@ -81,11 +81,11 @@ def test_urgency_never_changes_the_verdict():
 # Rejected before the build: the change is never executed.
 
 @pytest.mark.parametrize("change, expected", [
-    (facts([".github/workflows/ci.yml", LOCK], ci=True), {"R1", "R4"}),
-    (facts([LOCK], test_config=True), {"R2"}),
+    (facts([".github/workflows/ci.yml", LOCK], ci=True), {"X1", "X4"}),
+    (facts([LOCK], test_config=True), {"X2"}),
     (facts([LOCK], suspicious=[SuspiciousAddition(LOCK, 1, "pip: alternative index or direct URL", "--index-url x")]),
-     {"R3"}),
-    (facts([LOCK, POM]), {"R4"}),
+     {"X3"}),
+    (facts([LOCK, POM]), {"X4"}),
 ])
 def test_pre_build_rejections(change, expected):
     decision = policy.pre_build(PYYAML, PROPOSAL, change)
@@ -103,14 +103,14 @@ def test_clean_change_passes_pre_build():
 def test_version_that_does_not_fix_is_rejected(resolved):
     decision = decide(PYYAML, PYYAML_FACTS, build(PY_BASELINE, resolved_versions={"PyYAML": resolved}), PY_BASELINE)
     assert decision.verdict is Verdict.REJECT
-    assert rule_ids(decision) == {"R5"}
+    assert rule_ids(decision) == {"R1"}
 
 
 def test_tests_that_passed_before_and_fail_after_are_rejected():
     decision = decide(PYYAML, PYYAML_FACTS, replace(PYYAML_BUILD, tests_passed=False, failed_tests=["t.test_x"]),
                       PY_BASELINE)
     assert decision.verdict is Verdict.REJECT
-    assert rule_ids(decision) == {"R6"}
+    assert rule_ids(decision) == {"R2"}
 
 
 # Reasons for a person to look.
@@ -124,7 +124,7 @@ def test_code_change_and_extra_dependency_go_to_review():
                       build(JAVA_BASELINE, resolved_versions={"org.apache.commons:commons-collections4": "4.4"}),
                       JAVA_BASELINE)
     assert decision.verdict is Verdict.REVIEW
-    assert {"A", "B", "D"} <= rule_ids(decision)
+    assert {"V1", "V2", "V4"} <= rule_ids(decision)
 
 
 @pytest.mark.parametrize("build_, baseline", [
@@ -136,7 +136,7 @@ def test_code_change_and_extra_dependency_go_to_review():
 def test_weaker_test_evidence_goes_to_review(build_, baseline):
     decision = decide(PYYAML, PYYAML_FACTS, build_, baseline)
     assert decision.verdict is Verdict.REVIEW
-    assert rule_ids(decision) == {"E"}
+    assert rule_ids(decision) == {"V5"}
 
 
 # No evidence: fail closed.

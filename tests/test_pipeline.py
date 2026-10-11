@@ -66,7 +66,7 @@ def test_pipeline_end_to_end(make_repo, tmp_path):
     assert results["F-1"]["next_action"]["executed"] is False
 
     # REJECT before the build: the CI change was never built or run.
-    assert results["F-2"]["decision"]["reasons"][0].startswith("[R1]")
+    assert results["F-2"]["decision"]["reasons"][0].startswith("[X1]")
     assert [clone.parent.name for clone, _ in builder.calls if clone.name == "clean"] == ["F-1"]
 
     # A missing proposal fails closed.

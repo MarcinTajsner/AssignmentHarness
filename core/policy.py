@@ -10,7 +10,7 @@ Principles:
 - REJECT when the agent oversteps its job or touches the gates that judge it,
   or when the change demonstrably does not fix the finding or breaks tests.
 
-Each reason starts with the id of its rule, e.g. "[R1]", so it can be looked up in policy.md.
+Each reason starts with the id of its rule, e.g. "[X1]", so it can be looked up in policy.md.
 """
 
 import re
@@ -27,15 +27,15 @@ def pre_build(finding: Finding, proposal: Proposal, facts: Facts) -> Decision | 
     """
     reasons = []
     if facts.touches_ci:
-        reasons.append("[R1] changes CI configuration: the agent may not change the gate that checks it")
+        reasons.append("[X1] changes CI configuration: the agent may not change the gate that checks it")
     if facts.touches_test_config:
-        reasons.append("[R2] changes which tests run (test excludes, skip flags or pytest config)")
+        reasons.append("[X2] changes which tests run (test excludes, skip flags or pytest config)")
     for hit in facts.suspicious_additions:
-        reasons.append(f"[R3] suspicious addition in {hit.file}:{hit.line} ({hit.rule})")
+        reasons.append(f"[X3] suspicious addition in {hit.file}:{hit.line} ({hit.rule})")
     service_dir = f"{SERVICES_DIR}/{finding.service}/"
     outside = [path for path in facts.changed_files if not path.startswith(service_dir)]
     if outside:
-        reasons.append(f"[R4] changes files outside {service_dir}: {', '.join(outside)}")
+        reasons.append(f"[X4] changes files outside {service_dir}: {', '.join(outside)}")
     return Decision(Verdict.REJECT, reasons) if reasons else None
 
 
@@ -67,14 +67,14 @@ def decide(
     rejections = []
     if resolved is not None and _version(resolved):
         if finding.fixed_version and _version(resolved) < _version(finding.fixed_version):
-            rejections.append(f"[R5] {finding.package} in the build is {resolved}, "
+            rejections.append(f"[R1] {finding.package} in the build is {resolved}, "
                               f"below the fixed version {finding.fixed_version}")
         elif _version(resolved) <= _version(finding.installed_version):
-            rejections.append(f"[R5] {finding.package} in the build is {resolved}, not newer than the "
+            rejections.append(f"[R1] {finding.package} in the build is {resolved}, not newer than the "
                               f"vulnerable {finding.installed_version}: the finding is not fixed")
     if baseline is not None and baseline.tests_passed and not build.tests_passed:
         failed = ", ".join(build.failed_tests) or "the build failed before tests could run"
-        rejections.append(f"[R6] tests passed before the change and fail after it: {failed}")
+        rejections.append(f"[R2] tests passed before the change and fail after it: {failed}")
     if rejections:
         return Decision(Verdict.REJECT, rejections)
 
@@ -85,38 +85,38 @@ def decide(
         kinds = [kind for kind, present in (("production code", facts.touches_source), ("tests", facts.touches_tests))
                  if present]
         detail = f" (includes {' and '.join(kinds)})" if kinds else ""
-        reasons.append(f"[A] changes more than the dependency manifest{detail}: {', '.join(extra)}")
+        reasons.append(f"[V1] changes more than the dependency manifest{detail}: {', '.join(extra)}")
 
     others = sorted({c.package for c in facts.dependency_changes if not _same_package(c.package, finding.package)})
     if others:
-        reasons.append(f"[B] also changes other dependencies: {', '.join(others)}")
+        reasons.append(f"[V2] also changes other dependencies: {', '.join(others)}")
 
     if resolved is not None and _major(resolved) != _major(finding.installed_version):
-        reasons.append(f"[C] major version jump: {finding.installed_version} -> {resolved}")
+        reasons.append(f"[V3] major version jump: {finding.installed_version} -> {resolved}")
 
     if not finding.fixed_version:
-        reasons.append(f"[D] the scanner reports no fixed version, so the harness cannot confirm that "
+        reasons.append(f"[V4] the scanner reports no fixed version, so the harness cannot confirm that "
                        f"{resolved or 'the change'} fixes {finding.cve}")
     if resolved is None:
-        reasons.append(f"[D] {finding.package} is not found in the build after the change: "
+        reasons.append(f"[V4] {finding.package} is not found in the build after the change: "
                        "removed on purpose, or the version check failed")
     elif not _version(resolved):
-        reasons.append(f"[D] cannot compare the version {resolved} of {finding.package}")
+        reasons.append(f"[V4] cannot compare the version {resolved} of {finding.package}")
 
     if baseline is None:
-        reasons.append("[E] no baseline build to compare the tests with")
+        reasons.append("[V5] no baseline build to compare the tests with")
     elif not baseline.tests_passed:
-        reasons.append("[E] tests already failed before the change, so they prove nothing about it")
+        reasons.append("[V5] tests already failed before the change, so they prove nothing about it")
     elif build.tests_run == 0:
-        reasons.append("[E] no tests ran")
+        reasons.append("[V5] no tests ran")
     elif build.tests_run < baseline.tests_run:
-        reasons.append(f"[E] fewer tests ran than before the change: {build.tests_run} instead of {baseline.tests_run}")
+        reasons.append(f"[V5] fewer tests ran than before the change: {build.tests_run} instead of {baseline.tests_run}")
 
     if baseline is not None:
         regressed = [test for test, passed in build.excluded_tests.items()
                      if not passed and baseline.excluded_tests.get(test)]
         if regressed:
-            reasons.append(f"[F] tests the repository excludes passed before the change and fail after it: "
+            reasons.append(f"[V6] tests the repository excludes passed before the change and fail after it: "
                            f"{', '.join(regressed)}. The change alters behaviour that the regular suite does not check")
 
     if reasons:
